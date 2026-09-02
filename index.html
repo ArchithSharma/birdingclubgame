@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Name That Bird</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F2EBDA;
+    --paper-dark:#E8DFC8;
+    --ink:#20301F;
+    --forest:#2B4531;
+    --forest-deep:#1B2E1C;
+    --gold:#B4872E;
+    --rust:#A6402F;
+    --rust-deep:#7E2E21;
+    --line:#c9bd9c;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    padding:32px 16px 48px;
+    background:
+      radial-gradient(circle at 20% 10%, #f8f2e2 0%, transparent 45%),
+      var(--paper);
+    color:var(--ink);
+    font-family:'Inter', sans-serif;
+    display:flex;
+    justify-content:center;
+  }
+  .wrap{
+    width:100%;
+    max-width:560px;
+  }
+  header{
+    text-align:left;
+    margin-bottom:22px;
+    border-bottom:2px solid var(--forest);
+    padding-bottom:14px;
+  }
+  h1{
+    font-family:'Fraunces', serif;
+    font-weight:700;
+    font-size:clamp(30px, 6vw, 42px);
+    margin:0 0 4px;
+    color:var(--forest-deep);
+    letter-spacing:-0.01em;
+  }
+  .subtitle{
+    font-size:15px;
+    color:#4c5a45;
+    max-width:44ch;
+    line-height:1.5;
+  }
+  .status-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin:18px 0 10px;
+    font-size:14px;
+    color:#5a6752;
+  }
+  .status-row .round{
+    font-family:'Fraunces', serif;
+    font-size:17px;
+    color:var(--forest-deep);
+  }
+  .card{
+    background:#fbf8ef;
+    border:1px solid var(--line);
+    box-shadow:0 1px 0 var(--line), 0 10px 24px -18px rgba(27,46,28,0.4);
+    padding:18px;
+  }
+  .photo-frame{
+    position:relative;
+    width:100%;
+    aspect-ratio:4/3;
+    background:#e4dcc4;
+    border:1px solid var(--line);
+    overflow:hidden;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .photo-frame img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+  }
+  .loading-text, .error-text{
+    font-size:14px;
+    color:#7a7052;
+    text-align:center;
+    padding:0 20px;
+  }
+  .credit{
+    font-size:11.5px;
+    color:#8c8262;
+    margin:6px 2px 0;
+    text-align:right;
+  }
+  .credit a{ color:#8c8262; }
+  .guess-form{
+    display:flex;
+    gap:9px;
+    margin-top:16px;
+  }
+  .guess-form input{
+    flex:1;
+    min-width:0;
+    font-family:'Inter', sans-serif;
+    font-size:15.5px;
+    padding:13px 14px;
+    background:#fff;
+    border:1.5px solid var(--line);
+    color:var(--ink);
+  }
+  .guess-form input:focus{
+    outline:none;
+    border-color:var(--forest);
+  }
+  .guess-form input.correct{
+    border-color:var(--forest);
+    background:#e7f0e2;
+    color:var(--forest-deep);
+  }
+  .guess-form input.wrong{
+    border-color:var(--rust);
+    background:#f6e6e1;
+    color:var(--rust-deep);
+  }
+  .guess-form input:disabled{ cursor:default; }
+  .guess-btn{
+    font-family:'Inter', sans-serif;
+    font-size:15px;
+    font-weight:600;
+    padding:13px 18px;
+    background:var(--forest-deep);
+    color:#f2ebda;
+    border:none;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .guess-btn:hover:not(:disabled){ background:var(--forest); }
+  .guess-btn:disabled{ opacity:.5; cursor:default; }
+  .skip-btn{
+    display:block;
+    margin:9px auto 0;
+    background:none;
+    border:none;
+    font-family:'Inter', sans-serif;
+    font-size:13px;
+    color:#8c8262;
+    text-decoration:underline;
+    cursor:pointer;
+    padding:2px;
+  }
+  .skip-btn:disabled{ visibility:hidden; }
+  .feedback{
+    margin-top:14px;
+    padding:12px 14px;
+    font-size:14.5px;
+    line-height:1.5;
+    border-left:4px solid var(--forest);
+    background:#eef3ea;
+    display:none;
+  }
+  .feedback.wrong{
+    border-left-color:var(--rust);
+    background:#f7ece8;
+  }
+  .feedback b{ font-family:'Fraunces', serif; font-size:16px; }
+  .next-btn{
+    margin-top:16px;
+    width:100%;
+    padding:13px;
+    font-family:'Fraunces', serif;
+    font-size:17px;
+    font-weight:600;
+    background:var(--forest-deep);
+    color:#f2ebda;
+    border:none;
+    cursor:pointer;
+    display:none;
+  }
+  .next-btn:hover{ background:var(--forest); }
+
+  .end-screen{ display:none; text-align:center; padding:8px 4px; }
+  .end-score-label{ font-size:13.5px; color:#5a6752; margin-bottom:2px; }
+  .end-score{
+    font-family:'Fraunces', serif;
+    font-weight:700;
+    font-size:56px;
+    color:var(--forest-deep);
+    line-height:1;
+    margin-bottom:6px;
+  }
+  .end-msg{ font-size:15px; color:#4c5a45; margin-bottom:20px; }
+  .recap{
+    text-align:left;
+    list-style:none;
+    margin:0 0 22px;
+    padding:0;
+    border-top:1px solid var(--line);
+  }
+  .recap li{
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    font-size:14.5px;
+    padding:9px 2px;
+    border-bottom:1px solid var(--line);
+  }
+  .recap li span:first-child{ color:#5a6752; }
+  .recap li.right span:last-child{ color:var(--forest-deep); font-weight:600; }
+  .recap li.miss span:last-child{ color:var(--rust-deep); font-weight:600; }
+  .play-again{
+    width:100%;
+    padding:14px;
+    font-family:'Fraunces', serif;
+    font-size:17px;
+    font-weight:600;
+    background:var(--rust-deep);
+    color:#f2ebda;
+    border:none;
+    cursor:pointer;
+  }
+  .play-again:hover{ background:var(--rust); }
+
+  .qr-section{
+    margin-top:34px;
+    padding-top:24px;
+    border-top:2px solid var(--forest);
+    display:flex;
+    align-items:center;
+    gap:18px;
+  }
+  .qr-section a{
+    color:inherit;
+    text-decoration:none;
+  }
+  .qr-section img{
+    width:104px;
+    height:104px;
+    border:1px solid var(--line);
+    background:#fff;
+    padding:6px;
+    flex-shrink:0;
+    display:block;
+    transition:border-color .15s ease;
+  }
+  .qr-section a:hover img,
+  .qr-section a:focus-visible img{
+    border-color:var(--forest);
+  }
+  .qr-text .qr-eyebrow{
+    font-family:'Fraunces', serif;
+    font-size:17px;
+    color:var(--forest-deep);
+    margin-bottom:4px;
+  }
+  .qr-text p{
+    font-size:13.5px;
+    color:#5a6752;
+    line-height:1.5;
+    margin:0;
+  }
+  .qr-text p a{
+    color:var(--rust-deep);
+    text-decoration:underline;
+  }
+  .qr-text p a:hover{ color:var(--rust); }
+  @media (max-width:420px){
+    .qr-section{ flex-direction:column; text-align:center; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Name That Bird</h1>
+    <div class="subtitle">You'll see five photos of North American birds. Type the name for each one — get it wrong and we'll tell you what it actually is.</div>
+  </header>
+
+  <div class="status-row">
+    <div class="round" id="roundLabel">Bird 1 of 5</div>
+    <div id="scoreLabel">Score: 0</div>
+  </div>
+
+  <div class="card" id="gameCard">
+    <div class="photo-frame" id="photoFrame">
+      <div class="loading-text" id="loadingText">Fetching a photo…</div>
+    </div>
+    <div class="credit" id="credit"></div>
+    <form class="guess-form" id="guessForm">
+      <input type="text" id="guessInput" placeholder="Type the bird's name…" autocomplete="off" autocapitalize="words">
+      <button type="submit" class="guess-btn" id="guessBtn">Guess</button>
+    </form>
+    <button type="button" class="skip-btn" id="skipBtn">Not sure? Skip this one</button>
+    <div class="feedback" id="feedback"></div>
+    <button class="next-btn" id="nextBtn">Next bird</button>
+  </div>
+
+  <div class="card end-screen" id="endScreen">
+    <div class="end-score-label">You scored</div>
+    <div class="end-score" id="finalScore">0/5</div>
+    <div class="end-msg" id="endMsg"></div>
+    <ul class="recap" id="recap"></ul>
+    <button class="play-again" id="playAgainBtn">Play again</button>
+  </div>
+
+  <div class="qr-section">
+    <a href="https://join.slack.com/t/cmunationalau-xhz4377/shared_invite/zt-48t2yivsk-JupU5mrTulmf3MR9hHputg" target="_blank" rel="noopener" aria-label="Join the Slack workspace">
+      <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAYAAACtWK6eAAAAAXNSR0IArs4c6QAAAERlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAyKADAAQAAAABAAAAyAAAAACbWz2VAAARv0lEQVR4Ae2d4ZIkuY2Dby7u/V/ZXvosx2c4wWaqsspTI/QPJ0UCIBPZCmnG6/Wvv/318z/5iQNx4NKB/73MJhkH4sA/HMgGyS9CHGgcyAZpzEkpDmSD5HcgDjQOZIM05qQUB7JB8jsQBxoHskEac1KKA9kg+R2IA40D2SCNOSnFgWyQ/A7EgcaBbJDGnJTiQDZIfgfiQONANkhjTkpx4P92Lfj169cu9Ufeq/+A8XQ210f5DscXUQ5rjFWLPNZcvrRYe1Wb/Io5A2uuJzHKV47TpoZyWHs1nvTXHjlB1JGs4wAcyAaBGQnjgDqwfcWi0M7RRf4Tx+pUw8065RNHLcZ8t4rJYdzhOj3yOhxrri8xOqvWVl/NU5vxwq8na6qxMPqc4pS31uy5cneeOUHuuBXscQ5kgxz3yfPCdxx45IrFhtMjbefopHbH72qclXHHYV9yXL4wTs/lqVsxtZWj68Ulp3IOx/zTHOqxT83DWq3v/kz52vduH+JzgtCNxHFAHMgGEUOyjAN04PErFsWfiHeOVXL0uO1qk3mpRy3lskaO4rh+lUMtjaczKG+tn5iNM+zorVk++cwJ8km30+vrHMgG+bpPloE/6UA2yCfdTq+vc+C3/zOIu7dOneZdt+N0uMkMxGifTluxa91x2IuxcrjucKtnPR3HYZiveNqHONX4ndY5QX6nr5FZfjsHskF+u0+SgX4nBx6/Yj19dE6O/DJ0B+c+RPcOrLGnanU1YqnHPOOpFjkVU3uq8SpHZ3hyzdme1O20coJ07qR2vAPZIMf/CsSAzoFHrljT47sb5G5Ne/L4ZY35uz0W/lU9zkCtpb+erJGz6lfPjuNqLl/6rubyHedq3pXr9BZGtZn/VJwT5FNOp89XOpAN8pWfLUN/yoFskE85nT5f6cD2n0Gmd+QnXeG9VXVZ42zMF8fVmFdt1qjHvHJ21lM9NwPz2p819mFeOVyTw3wXK2fSSzmd/idqOUE+4XJ6fK0D2SBf++ky+Ccc2L5icTh3dE6PS+WTx3jSszCqR56LpxzOQw7z1UPXr/Yln9qcgZgu3uF0eq6mfTj3lEMc+Tva1JrGOUGmTgV3pAPZIEd+9rz01IFffx1bf5uCHY7HHeWYd9zKk9PhOj1qEMd8aXe1rveqTflT3NKtJznMdzHfT/muxnynTT1ymO/45HQ46imnq3Waq/YqPyfIcjLPOHDhQDbIhSlJxYHlwCN/i7XE7jx5lPIYnGqQP+UUjjz2dXnlEMe+1FKO1shzeh3G6amWw1Fb4wlH+6jG3XWnxxpnY/5uvzv4nCB33Ar2OAeyQY775HnhOw5kg9xxK9jjHHjkzyC8D3b3RNboNPmVJ4415hkXh7haux/yphxqOf6OVuk6PeYZcxaNO5yb7wkOtanHvM7KNTnMV+w0lEMca8yr9mSdE2TiUjDHOpANcuynz4tPHNi+YrljbOdIo1YN7TSYVw5fljjmNe40FLvW1Caf+YVdz662MN1zylcc56M+8x2nwzm9SZ4YjXUerX96nRPk046n31c5kA3yVZ8rw37agUf+YUUOzWOZ+Yqnxyc1phzttdbU0hlYYx/ml87VkxytU4M45qfzqPZ0zV6cgXxidB7iGHcc1rQna9SbxtTrtByO+WnPnCBTp4I70oFskCM/e1566kA2yNSp4I504PG/5qWL0zuf3icdT3GuV4dzNZdnjzuxewfVYF9ymFcOcawpZ4JzGOr+FLMv9ZhXjVdx5Jd210t731nnBLnjVrDHOZANctwnzwvfcWD7iqVH3GrKvB57rC18PTWvvIVV3MrXkxzimCe+YodjvnDUYM3lO07V3E+nRw5xzHO2yjscORqTo3qKfWXNPtTRng5HTsXkkcO8cibrnCATl4I51oFskGM/fV584sD2FYvHGBvtHGmqRQ2tsZeLyaFW4VkjX3GTWschn7Fy3DzkdDH1plrkdNrUI4dx8Ynr9FijBvmMC+9w1Opi6lGr47CWE4RuJI4D4kA2iBiSZRygA9tXLIq4WI80d9xNcY6v/VVP62vt9Jhf2J+eXU/qdTjWyOl6T3HUpp7yidPa4mnecZgvrvKWHp/KmdYcbtKTXI1zgqgjWccBOJANAjMSxgF1IBtEHck6DsCBR/4M0t0b0evfwu5uSD2Hc/lqwhq1qqbrytUPOf+fuf5P8slhXEzirpWez2pPzsRYca9OQu1Oy/V1+dKiNnHMF461Wj/1kxPkKSej80c6kA3yR37WvNRTDmxfsXik6XF3dzhqFZd6WnPajsN8cZ2eyxeHGow7TvHu/lCb3Gkfx6eWxk9oU2NnhilnitN3fGWdE+QV98L94x3IBvnjP3Fe8BUHtq9YPO7cEct8NyS1Ckceay6v2uR0NafHvPK57vo4jR0Oe2pMPe3pai6v2lyrNmvUY15j4pyey5dWx3e1Tk/nu1rnBLlyJbk48E8HskHyqxAHGge2r1iN5r9KPPYq6Y47l1eO6v2rkQTUU46rMS9y/zY39chhvvhcE8dYcdp3sqYeexbX1ZjXHqqx6i6vfRb+qSf7dnOzNuVMZswJMnEpmGMdyAY59tPnxScOZINMXArmWAce+be7uzsf8+Uw74l0fIojZxrvaE85xLl3qzmJ07nJI4555XBNDvNd/Kr2lN/N4OZW7SmOvXY45DPOCUI3EscBcSAbRAzJMg7QgUeuWBScxjwG9Vh1Gjscp1V56hGn8xCntcUjpnLEscZ84Vir9fpR3MrXk5wncBNt9iS+i3U2p6E4p+n4hacGccw73S6fE6RzJ7XjHcgGOf5XIAZ0Dmz/N+nuGHP5GoI1DuXyxFTM43LK6TSmesSp3lpPMIWdzj3Frf7veHKG7v0cjvmajxqsMX76PajN/tM+OUGmTgV3pAPZIEd+9rz01IFskKlTwR3pwPafQXif4z2PLrp8YcgnR+NOg1jqTTnEdXzW2NPxifkpdtrksQ/zGk9x5O1wyO9ifTfXS3FO0/EL39Wc3iSfE2TiUjDHOpANcuynz4tPHNi+YvFI4xHp8jUMaxxO89QjjrFiVGNhp7iF/+nJPtRm/icNV6cGtRXPGjmKm6yppfhXtVWPvZy25slRPa4dTvXImcQ5QSYuBXOsA9kgx376vPjEge0rljvSmJ8eb+R0Q1Ov40xr1GOsfNa6+VyNep0WcU7rTp567Mv8VO9V/rTPzmylzfmmvSa4nCATl4I51oFskGM/fV584sD2FYvi7njT45I4xtR6IqZ2NwN7EUd+YboaNVysesR1NeJc3M1GbYdjvno4juvf5an1BK7TYE3fibW7cU6Qu44Ff5QD2SBHfe687F0HskHuOhb8UQ5s/2/Seb/knY/5zklyFOc0yHEY1erWU70Jjpiup9Ym76Ha5LDGfPVhTftO1tSjFvN3+pDn9JgvbcfR+YnT2lqr9sp3z5wgnTupHe9ANsjxvwIxoHPgv/bXvBxKj8fJUagYamiNvRiTw7zGE5xi3AyK015X6x1O6TgeZ1MMa1ez3MmpNrmssSfzxGvc4Xb0VH+tc4IsJ/KMAxcOZINcmJJUHFgObP8t1hKoJ487Hm/E3ImpRx61FcMaORqTRw7zypmsqTXB/4ThPJ320zg3F/s4TOU56zs5OoPry7xyJuucIBOXgjnWgWyQYz99XnziQDbIxKVgjnXg8T+D0Mnu/je9n1KPsWpTT2vkTXDEkFsxtYljvnCs1fqVH9V+Rau4nE21WXN9ppwOx9qkZ81Cjpvt6XxOkKcdjd4f5UA2yB/1OfMyTzvw+BXriWNweuTSDPYln3ni78TUu8O7wuo81NbaFb9y5BCj/AlOMdRgzeWrP2ucp4vfqc2+rg8xXZwTpHMnteMdyAY5/lcgBnQObP/Dijy62MDlC+OOYuUQx5rLs/9PMfUcln0Kw7XjE1Mch6saf5S3ah3fcRZ3PSe4DuNqLl99ObfiWFszvuP5ZJ+cIO/4QtH8YxzIBvljPmVe5B0ObF+xOIwepawxdkef8h2O+Y7DGjmcReN3cjrtrrZmJGblrp7duzqNjsMe5E85Uxz7dHGnx/kYd3qTWk6QiUvBHOtANsixnz4vPnEgG2TiUjDHOrD9ZxDe89zdkJhymGtyGOuXcBzFcU098gvDGjnTWPUcb4p7dR72157UZjzlEMe468Oa60mtO/GONmcgf9o3J8jUqeCOdCAb5MjPnpeeOrB9xWKD6dHF467jOxw5HYbzKI61qZ7DUYtx4bUvNRiTR47LF5c1apGvONbIZ77jdH1YY8w+zFesfVddOcRpbXE6PWJ24pwgO66Fc4wD2SDHfOq86I4D21csHn07jclRLXeUMj/lsE/Fylt1aq/cepJDHPMLu57ErdzVkxqvcpS/o301o+a0D+s7PcmhlsbEdTOQRw7z0zgnyNSp4I50IBvkyM+el546sH3FYgMedzzSmC88a47PfMdR3JNrnVPfY9KLGuQzXzquxjzjrveOtupRg31dvvisqR7XUxw5jN08helq1Lgb5wS561jwRzmQDXLU587L3nUgG+SuY8Ef5cD2n0F453OOTe+cHW7Sp/p3Gm4+ak/5xHV8V2N+Ojd7FocarDGv2qyRU7jJz5S/g5v0L8x0bs4w1Xa4nCDOmeTjwF8OZIPk1yAONA5s/5sVJ8fd7lH339DmrNqftcbLUWmqTZz272qjIRrQRJsYldJZWSevw5EzjZ22y091c4JMnQruSAeyQY787HnpqQPbf4vlGvDo5PHm8Fd5arDe6bma0yrdrsa+O7Gbp9Mip5uNNXI67WnNaTPPWHU5T4dT3lqTXzlqaG1x3vnMCfJOd6P99Q5kg3z9J8wLvNOBbJB3uhvtr3dg+695+ebubsj7I/E/xRM9hyntaV+n0fHJmeK693Ua7NPxX61pf/ZlzeW1P3Fac2vXp/Cska99HI6cnTgnyI5r4RzjQDbIMZ86L7rjwCN/zeuOt+kxOMXtvKBy2MvNrRyuyem0HI5aFVNDa25NbYepvNOe8jttV+u03Twu372D6695anezKW+tc4IsJ/KMAxcOZINcmJJUHFgOPHLFWmL6nB5pHe7VI1Jn4prazE/nIUe1qMG4w1GPsXKmNeIYd3oOx3cgpmKnpxyuyWFetbkmh/l3xjlB3ulutL/egWyQr/+EeYF3OrB9xXrncccjl3HXkzgaphyHI2caU0v7cE1cpz3lEEe9ro/jkL8bs2/Xp6ut3oqh9sJcPcmbcq50NJcTRB3JOg7AgWwQmJEwDqgD2SDqSNZxAA5s/xkEGvYfKCOmi3l/7HC8WypH10uHnMoRp7XFIaZyE5xiqMF49bh6qsYVpnLEUZux42qeWlWjhtYWl5iVW09yFNfVrvgrd/Wk1lV95aa4hddnThB1JOs4AAeyQWBGwjigDjxyxaKoHqusMd45+jptp9dxOA9jp1UY1qbaHWeqwfl2OORzHuansfKn8zicy0/neScuJ8g73Y321zuQDfL1nzAv8E4HHr9ivXPYqTaPbL0OTDWIox7zjCeYwus85Glt6ROzck89O23WOBvzNYerMV848rRW9asfcljXvNMjzmGoq3FOEHUk6zgAB7JBYEbCOKAOZIOoI1nHATjw2/8ZhHdIzP0f4dO4/2hwkeCdVvu7GvMlyTU1mGesYzhO4bra0plqL3w9O05XowZnY175XDtO8Vkjh9o7cU6QHdfCOcaBbJBjPnVedMeBx69YTx5v+kKd9vSIpQY57EVM5YnTGnmMHYf5wk/0lMM+03iqwXkYT/tMcdTuZutq7EW9SZ6YLs4J0rmT2vEOZIMc/ysQAzoHHrliTY/BbhBXc0en9nQ41SWPHOYZF9/hqE1M5anBmBzFqYZi15q4Tnvh9dnxqedwzJe242hfrslhXmPtpfWf1uyzo5UT5CeHUz/agWyQoz9/Xv4nBx75/wf5qUnqceBbHcgJ8q1fLnN/xIFskI/YnCbf6kA2yLd+ucz9EQeyQT5ic5p8qwPZIN/65TL3RxzIBvmIzWnyrQ5kg3zrl8vcH3EgG+QjNqfJtzqQDfKtXy5zf8SBbJCP2Jwm3+pANsi3frnM/REHskE+YnOafKsDfwfd0wNWbMmrEQAAAABJRU5ErkJggg==" alt="QR code that links to the Slack invite">
+    </a>
+    <div class="qr-text">
+      <div class="qr-eyebrow">Join us on Slack</div>
+      <p>Scan the code on your phone, or <a href="https://join.slack.com/t/cmunationalau-xhz4377/shared_invite/zt-48t2yivsk-JupU5mrTulmf3MR9hHputg" target="_blank" rel="noopener">tap here</a> to join from this device.</p>
+    </div>
+  </div>
+
+</div>
+
+
+<script>
+const BIRDS = [
+  // Backyard & feeder birds
+  { name: "Northern Cardinal", wiki: "Northern_cardinal", aliases: ["cardinal"] },
+  { name: "Blue Jay", wiki: "Blue_jay", aliases: ["jay"] },
+  { name: "American Robin", wiki: "American_robin", aliases: ["robin"] },
+  { name: "American Goldfinch", wiki: "American_goldfinch", aliases: ["goldfinch"] },
+  { name: "House Finch", wiki: "House_finch", aliases: [] },
+  { name: "Purple Finch", wiki: "Purple_finch", aliases: [] },
+  { name: "Pine Siskin", wiki: "Pine_siskin", aliases: ["siskin"] },
+  { name: "House Sparrow", wiki: "House_sparrow", aliases: ["english sparrow"] },
+  { name: "Song Sparrow", wiki: "Song_sparrow", aliases: [] },
+  { name: "White-throated Sparrow", wiki: "White-throated_sparrow", aliases: [] },
+  { name: "White-crowned Sparrow", wiki: "White-crowned_sparrow", aliases: [] },
+  { name: "Chipping Sparrow", wiki: "Chipping_sparrow", aliases: [] },
+  { name: "Field Sparrow", wiki: "Field_sparrow", aliases: [] },
+  { name: "Fox Sparrow", wiki: "Fox_sparrow", aliases: [] },
+  { name: "Dark-eyed Junco", wiki: "Dark-eyed_junco", aliases: ["junco"] },
+  { name: "Black-capped Chickadee", wiki: "Black-capped_chickadee", aliases: ["black capped chickadee"] },
+  { name: "Carolina Chickadee", wiki: "Carolina_chickadee", aliases: [] },
+  { name: "Tufted Titmouse", wiki: "Tufted_titmouse", aliases: ["titmouse"] },
+  { name: "White-breasted Nuthatch", wiki: "White-breasted_nuthatch", aliases: [] },
+  { name: "Red-breasted Nuthatch", wiki: "Red-breasted_nuthatch", aliases: [] },
+  { name: "Carolina Wren", wiki: "Carolina_wren", aliases: [] },
+  { name: "House Wren", wiki: "House_wren", aliases: [] },
+  { name: "European Starling", wiki: "European_starling", aliases: ["starling"] },
+  { name: "Mourning Dove", wiki: "Mourning_dove", aliases: ["dove"] },
+  { name: "Rock Pigeon", wiki: "Rock_pigeon", aliases: ["pigeon"] },
+  { name: "Common Grackle", wiki: "Common_grackle", aliases: ["grackle"] },
+  { name: "Red-winged Blackbird", wiki: "Red-winged_blackbird", aliases: ["blackbird"] },
+  { name: "Brown-headed Cowbird", wiki: "Brown-headed_cowbird", aliases: ["cowbird"] },
+  { name: "Eastern Towhee", wiki: "Eastern_towhee", aliases: ["towhee"] },
+
+  // Woodpeckers
+  { name: "Downy Woodpecker", wiki: "Downy_woodpecker", aliases: [] },
+  { name: "Hairy Woodpecker", wiki: "Hairy_woodpecker", aliases: [] },
+  { name: "Red-bellied Woodpecker", wiki: "Red-bellied_woodpecker", aliases: [] },
+  { name: "Red-headed Woodpecker", wiki: "Red-headed_woodpecker", aliases: [] },
+  { name: "Pileated Woodpecker", wiki: "Pileated_woodpecker", aliases: [] },
+  { name: "Northern Flicker", wiki: "Northern_flicker", aliases: ["flicker"] },
+
+  // Raptors & aerial hunters
+  { name: "Bald Eagle", wiki: "Bald_eagle", aliases: [] },
+  { name: "Golden Eagle", wiki: "Golden_eagle", aliases: [] },
+  { name: "Red-tailed Hawk", wiki: "Red-tailed_hawk", aliases: ["red tailed hawk", "redtail hawk", "redtail"] },
+  { name: "Cooper's Hawk", wiki: "Cooper's_hawk", aliases: [] },
+  { name: "Sharp-shinned Hawk", wiki: "Sharp-shinned_hawk", aliases: ["sharpie"] },
+  { name: "Northern Harrier", wiki: "Northern_harrier", aliases: ["harrier", "marsh hawk"] },
+  { name: "Osprey", wiki: "Osprey", aliases: ["sea hawk", "fish hawk"] },
+  { name: "American Kestrel", wiki: "American_kestrel", aliases: ["kestrel"] },
+  { name: "Peregrine Falcon", wiki: "Peregrine_falcon", aliases: ["falcon"] },
+  { name: "Turkey Vulture", wiki: "Turkey_vulture", aliases: ["vulture", "buzzard"] },
+  { name: "Barn Owl", wiki: "Barn_owl", aliases: [] },
+  { name: "Barred Owl", wiki: "Barred_owl", aliases: ["hoot owl"] },
+  { name: "Great Horned Owl", wiki: "Great_horned_owl", aliases: ["horned owl"] },
+  { name: "Snowy Owl", wiki: "Snowy_owl", aliases: ["white owl"] },
+
+  // Water birds
+  { name: "Mallard", wiki: "Mallard", aliases: [] },
+  { name: "Wood Duck", wiki: "Wood_duck", aliases: [] },
+  { name: "American Black Duck", wiki: "American_black_duck", aliases: ["black duck"] },
+  { name: "Bufflehead", wiki: "Bufflehead", aliases: [] },
+  { name: "Canada Goose", wiki: "Canada_goose", aliases: ["canadian goose", "goose"] },
+  { name: "Trumpeter Swan", wiki: "Trumpeter_swan", aliases: ["swan"] },
+  { name: "Common Loon", wiki: "Common_loon", aliases: ["loon"] },
+  { name: "Pied-billed Grebe", wiki: "Pied-billed_grebe", aliases: ["grebe"] },
+  { name: "Double-crested Cormorant", wiki: "Double-crested_cormorant", aliases: ["cormorant"] },
+  { name: "Great Blue Heron", wiki: "Great_blue_heron", aliases: ["blue heron"] },
+  { name: "Green Heron", wiki: "Green_heron", aliases: [] },
+  { name: "Great Egret", wiki: "Great_egret", aliases: [] },
+  { name: "Snowy Egret", wiki: "Snowy_egret", aliases: [] },
+  { name: "Wood Stork", wiki: "Wood_stork", aliases: ["stork"] },
+  { name: "Sandhill Crane", wiki: "Sandhill_crane", aliases: ["crane"] },
+  { name: "American Coot", wiki: "American_coot", aliases: ["coot", "mudhen"] },
+  { name: "Killdeer", wiki: "Killdeer", aliases: [] },
+  { name: "Ring-billed Gull", wiki: "Ring-billed_gull", aliases: [] },
+  { name: "Herring Gull", wiki: "Herring_gull", aliases: [] },
+  { name: "Belted Kingfisher", wiki: "Belted_kingfisher", aliases: ["kingfisher"] },
+
+  // Warblers & warbler-family birds
+  { name: "Yellow Warbler", wiki: "Yellow_warbler", aliases: ["wild canary"] },
+  { name: "Yellow-rumped Warbler", wiki: "Yellow-rumped_warbler", aliases: ["yellow rumped warbler", "butter butt"] },
+  { name: "Black-and-white Warbler", wiki: "Black-and-white_warbler", aliases: ["black and white warbler"] },
+  { name: "American Redstart", wiki: "American_redstart", aliases: ["redstart"] },
+  { name: "Common Yellowthroat", wiki: "Common_yellowthroat", aliases: ["yellowthroat"] },
+  { name: "Magnolia Warbler", wiki: "Magnolia_warbler", aliases: [] },
+  { name: "Blackburnian Warbler", wiki: "Blackburnian_warbler", aliases: [] },
+  { name: "Chestnut-sided Warbler", wiki: "Chestnut-sided_warbler", aliases: ["chestnut sided warbler"] },
+  { name: "Prothonotary Warbler", wiki: "Prothonotary_warbler", aliases: [] },
+  { name: "Wilson's Warbler", wiki: "Wilson's_warbler", aliases: ["wilsons warbler"] },
+
+  // Everything else
+  { name: "Wild Turkey", wiki: "Wild_turkey", aliases: ["turkey"] },
+  { name: "Ruby-throated Hummingbird", wiki: "Ruby-throated_hummingbird", aliases: ["ruby throated hummingbird", "hummingbird"] },
+  { name: "American Crow", wiki: "American_crow", aliases: ["crow"] },
+  { name: "Common Raven", wiki: "Common_raven", aliases: ["raven"] },
+  { name: "Eastern Bluebird", wiki: "Eastern_bluebird", aliases: ["bluebird"] },
+  { name: "Cedar Waxwing", wiki: "Cedar_waxwing", aliases: ["waxwing"] },
+  { name: "Barn Swallow", wiki: "Barn_swallow", aliases: [] },
+  { name: "Tree Swallow", wiki: "Tree_swallow", aliases: [] },
+  { name: "Purple Martin", wiki: "Purple_martin", aliases: ["martin"] },
+  { name: "Eastern Kingbird", wiki: "Eastern_kingbird", aliases: ["kingbird"] },
+  { name: "Eastern Phoebe", wiki: "Eastern_phoebe", aliases: ["phoebe"] },
+  { name: "Great Crested Flycatcher", wiki: "Great_crested_flycatcher", aliases: [] },
+  { name: "Northern Mockingbird", wiki: "Northern_mockingbird", aliases: ["mockingbird"] },
+  { name: "Brown Thrasher", wiki: "Brown_thrasher", aliases: ["thrasher"] },
+  { name: "Gray Catbird", wiki: "Gray_catbird", aliases: ["catbird"] },
+  { name: "Scarlet Tanager", wiki: "Scarlet_tanager", aliases: ["tanager"] },
+  { name: "Indigo Bunting", wiki: "Indigo_bunting", aliases: ["bunting"] },
+  { name: "Rose-breasted Grosbeak", wiki: "Rose-breasted_grosbeak", aliases: ["grosbeak"] },
+  { name: "Baltimore Oriole", wiki: "Baltimore_oriole", aliases: [] },
+  { name: "Orchard Oriole", wiki: "Orchard_oriole", aliases: [] },
+  { name: "Eastern Meadowlark", wiki: "Eastern_meadowlark", aliases: ["meadowlark"] }
+
+];
+
+function normalize(s){
+  return s
+    .toLowerCase()
+    .replace(/[^a-z\s-]/g, '')
+    .replace(/\b(a|an|the)\b/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function levenshtein(a, b){
+  const m = a.length, n = b.length;
+  if(m === 0) return n;
+  if(n === 0) return m;
+  const dp = Array.from({length: m + 1}, () => new Array(n + 1).fill(0));
+  for(let i = 0; i <= m; i++) dp[i][0] = i;
+  for(let j = 0; j <= n; j++) dp[0][j] = j;
+  for(let i = 1; i <= m; i++){
+    for(let j = 1; j <= n; j++){
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[i][j] = Math.min(
+        dp[i - 1][j] + 1,
+        dp[i][j - 1] + 1,
+        dp[i - 1][j - 1] + cost
+      );
+    }
+  }
+  return dp[m][n];
+}
+
+function closeEnough(guess, target){
+  if(guess === target) return true;
+  const tolerance = target.length <= 5 ? 1 : (target.length <= 9 ? 2 : 3);
+  return levenshtein(guess, target) <= tolerance;
+}
+
+function isCorrectGuess(rawGuess, bird){
+  const guess = normalize(rawGuess);
+  if(!guess) return false;
+  const targets = [bird.name, ...(bird.aliases || [])].map(normalize);
+  return targets.some(t => closeEnough(guess, t));
+}
+
+const ROUNDS = 5;
+let deck = [];        // birds chosen for this game
+let imageCache = {};  // wiki -> {src, pageUrl}
+let round = 0;
+let score = 0;
+let history = [];     // {bird, correct: bool, picked}
+let locked = false;
+
+const roundLabel = document.getElementById('roundLabel');
+const scoreLabel = document.getElementById('scoreLabel');
+const photoFrame = document.getElementById('photoFrame');
+const creditEl = document.getElementById('credit');
+const guessForm = document.getElementById('guessForm');
+const guessInput = document.getElementById('guessInput');
+const guessBtn = document.getElementById('guessBtn');
+const skipBtn = document.getElementById('skipBtn');
+const feedbackEl = document.getElementById('feedback');
+const nextBtn = document.getElementById('nextBtn');
+const gameCard = document.getElementById('gameCard');
+const endScreen = document.getElementById('endScreen');
+const finalScoreEl = document.getElementById('finalScore');
+const endMsgEl = document.getElementById('endMsg');
+const recapEl = document.getElementById('recap');
+const playAgainBtn = document.getElementById('playAgainBtn');
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function pickDeck(){
+  deck = shuffle(BIRDS).slice(0, ROUNDS);
+}
+
+async function fetchBirdImage(bird){
+  if(imageCache[bird.wiki]) return imageCache[bird.wiki];
+  const url = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(bird.wiki)}`;
+  const res = await fetch(url);
+  if(!res.ok) throw new Error('lookup failed');
+  const data = await res.json();
+  const src = (data.originalimage && data.originalimage.source) ||
+              (data.thumbnail && data.thumbnail.source);
+  if(!src) throw new Error('no image');
+  const info = { src, pageUrl: data.content_urls?.desktop?.page || `https://en.wikipedia.org/wiki/${bird.wiki}` };
+  imageCache[bird.wiki] = info;
+  return info;
+}
+
+async function loadRound(){
+  locked = false;
+  feedbackEl.style.display = 'none';
+  feedbackEl.className = 'feedback';
+  nextBtn.style.display = 'none';
+  guessForm.style.display = 'flex';
+  guessInput.value = '';
+  guessInput.className = '';
+  guessInput.disabled = false;
+  guessBtn.disabled = false;
+  skipBtn.disabled = false;
+  creditEl.textContent = '';
+  photoFrame.innerHTML = '<div class="loading-text">Fetching a photo…</div>';
+
+  roundLabel.textContent = `Bird ${round + 1} of ${ROUNDS}`;
+  scoreLabel.textContent = `Score: ${score}`;
+
+  const bird = deck[round];
+  let info;
+  try{
+    info = await fetchBirdImage(bird);
+  }catch(e){
+    photoFrame.innerHTML = '<div class="error-text">Couldn\'t load a photo for this one — skipping ahead.</div>';
+    setTimeout(() => advance(true), 900);
+    return;
+  }
+
+  const img = new Image();
+  img.alt = 'Mystery bird';
+  img.onload = () => {
+    photoFrame.innerHTML = '';
+    photoFrame.appendChild(img);
+    creditEl.innerHTML = `Photo via <a href="${info.pageUrl}" target="_blank" rel="noopener">Wikipedia</a>`;
+    guessInput.focus();
+  };
+  img.onerror = () => {
+    photoFrame.innerHTML = '<div class="error-text">Couldn\'t load a photo for this one — skipping ahead.</div>';
+    setTimeout(() => advance(true), 900);
+  };
+  img.src = info.src;
+}
+
+function submitGuess(rawGuess, skipped){
+  if(locked) return;
+  locked = true;
+
+  const correctBird = deck[round];
+  const isCorrect = !skipped && isCorrectGuess(rawGuess, correctBird);
+  if(isCorrect) score++;
+
+  guessInput.disabled = true;
+  guessBtn.disabled = true;
+  skipBtn.disabled = true;
+  guessInput.classList.add(isCorrect ? 'correct' : 'wrong');
+
+  feedbackEl.style.display = 'block';
+  if(isCorrect){
+    feedbackEl.classList.remove('wrong');
+    feedbackEl.innerHTML = `<b>Correct.</b> That's a ${correctBird.name}.`;
+  } else if(skipped){
+    feedbackEl.classList.add('wrong');
+    feedbackEl.innerHTML = `<b>Skipped.</b> That's a ${correctBird.name}.`;
+  } else {
+    feedbackEl.classList.add('wrong');
+    feedbackEl.innerHTML = `<b>Not quite.</b> You guessed "${rawGuess.trim()}" — that's actually a ${correctBird.name}.`;
+  }
+
+  history.push({ bird: correctBird.name, correct: isCorrect, skipped: !!skipped && !isCorrect });
+  scoreLabel.textContent = `Score: ${score}`;
+  nextBtn.style.display = 'block';
+  nextBtn.textContent = (round === ROUNDS - 1) ? 'See your results' : 'Next bird';
+}
+
+guessForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  if(!guessInput.value.trim()) return;
+  submitGuess(guessInput.value, false);
+});
+
+skipBtn.addEventListener('click', () => submitGuess('', true));
+
+function advance(skipped){
+  if(skipped) history.push({ bird: deck[round].name, correct: false, skipped: true });
+  round++;
+  if(round >= ROUNDS){
+    showEnd();
+  } else {
+    loadRound();
+  }
+}
+
+nextBtn.addEventListener('click', () => advance(false));
+
+function showEnd(){
+  gameCard.style.display = 'none';
+  endScreen.style.display = 'block';
+  finalScoreEl.textContent = `${score}/${ROUNDS}`;
+
+  let msg;
+  if(score === ROUNDS) msg = "A clean sweep — you know your birds.";
+  else if(score >= ROUNDS - 1) msg = "Sharp eye out there.";
+  else if(score >= ROUNDS / 2) msg = "Solid instincts, a bit more field time and you'll have it.";
+  else msg = "Birding takes practice — give it another go.";
+  endMsgEl.textContent = msg;
+
+  recapEl.innerHTML = '';
+  history.forEach(h => {
+    const li = document.createElement('li');
+    li.className = h.correct ? 'right' : 'miss';
+    li.innerHTML = `<span>${h.bird}</span><span>${h.correct ? 'Correct' : (h.skipped ? 'Skipped' : 'Missed')}</span>`;
+    recapEl.appendChild(li);
+  });
+}
+
+playAgainBtn.addEventListener('click', () => {
+  round = 0;
+  score = 0;
+  history = [];
+  endScreen.style.display = 'none';
+  gameCard.style.display = 'block';
+  pickDeck();
+  loadRound();
+});
+
+pickDeck();
+loadRound();
+</script>
+</body>
+</html>
